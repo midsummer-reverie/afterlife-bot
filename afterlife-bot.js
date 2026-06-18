@@ -122,7 +122,7 @@ const commands = [
     },
     {
         name: 'pray',
-        description: 'ส่งคำอธิษฐานถึงเทพประจำตัว (บังคับใช้ 5 เสี้ยววิญญาณบริสุทธิ์)',
+        description: 'ส่งข้อความถึงเทพประจำตัว (ใช้ครั้งละ 5 เสี้ยววิญญาณบริสุทธิ์)',
         options: [
             { name: 'character_name', description: 'ชื่อตัวละครพนักงานร้านของคุณ', type: 3, required: true, autocomplete: true },
             { name: 'message', description: 'ข้อความคำอธิษฐาน', type: 3, required: true }
@@ -575,7 +575,7 @@ client.on('interactionCreate', async interaction => {
 
                 const { data: charData } = await supabase.from('characters').select('*').eq('name_th', characterName).eq('discord_id', discordId).eq('status', 'พนักงานร้าน').single();
                 if (!charData) return interaction.editReply('❌ ไม่พบตัวละครชื่อนี้ หรือไม่ใช่ของคุณ');
-                if (!charData.deity_id) return interaction.editReply('❌ ยังไม่มีเทพประจำตัว ไม่สามารถส่งคำอธิษฐานได้');
+                if (!charData.deity_id) return interaction.editReply('❌ ยังไม่มีเทพประจำตัว ไม่สามารถส่งข้อความได้');
 
                 if ((charData.item_amount || 0) < cost) return interaction.editReply(`❌ ยอดไม่พอ! (ต้องการ ${cost} | มี ${charData.item_amount || 0})`);
 
@@ -604,8 +604,8 @@ client.on('interactionCreate', async interaction => {
                     // 1. ส่งคำอธิษฐานเข้าเธรด (พร้อมแท็กแอดมิน)
                     await targetThread.send(payload);
                     
-                    // 2. แสดงผลลัพธ์การ์ดคำอธิษฐานให้ผู้เล่นเห็นตรงที่พิมพ์เลย (เอาข้อความแจ้งเตือนออก)
-                    await interaction.editReply({ embeds: [msgEmbed] });
+                    // 2. ลบข้อความที่ Defer ไว้ทิ้งไปเลย (ผู้เล่นจะไม่เห็นผลลัพธ์ใดๆ ในช่องแชทที่พิมพ์)
+                    await interaction.deleteReply();
                     
                 } catch (err) {
                     await interaction.editReply(`❌ เกิดข้อผิดพลาด: หักของแล้วแต่ไม่สามารถส่งลงเธรดได้ (โปรดเช็ก ID เธรด)`);
