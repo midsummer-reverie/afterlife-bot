@@ -717,17 +717,33 @@ client.on('interactionCreate', async interaction => {
             else if (interaction.commandName === 'dropshards') {
                 const characterName = interaction.options.getString('character_name');
                 const { data: charData } = await supabase.from('characters').select('*').eq('name_th', characterName).eq('discord_id', interaction.user.id).single();
+                
                 if (!charData) return interaction.editReply('❌ ไม่พบตัวละคร หรือคุณไม่ใช่เจ้าของ');
-                if (!charData.deity_id) return interaction.editReply('❌ ตัวละครนี้ยังไม่มีเทพประจำตัว');
 
-                const { data: deityData } = await supabase.from('deities').select('*').eq('id', charData.deity_id).single();
-                const min = deityData.min_item_drop || 1;
-                const max = deityData.max_item_drop || 5;
+                // ตั้งค่าเรทดรอปเริ่มต้นสำหรับคนที่ "ไม่มีเทพประจำตัว"
+                let min = 1;
+                let max = 5;
+
+                // ถ้ามีเทพประจำตัว ค่อยไปดึงข้อมูลเรทของเทพนั้นมาทับค่าเริ่มต้น
+                if (charData.deity_id) {
+                    const { data: deityData } = await supabase.from('deities').select('*').eq('id', charData.deity_id).single();
+                    if (deityData) {
+                        min = deityData.min_item_drop || 1;
+                        max = deityData.max_item_drop || 5;
+                    }
+                }
+
                 const dropAmount = Math.floor(Math.random() * (max - min + 1)) + min;
                 const newTotal = (charData.item_amount || 0) + dropAmount;
 
                 await supabase.from('characters').update({ item_amount: newTotal }).eq('id', charData.id);
-                await interaction.editReply({ embeds: [new EmbedBuilder().setColor(charData.theme_color || '#ffffff').setTitle(`✨ เข้างานที่ร้านหนังสือ`).setDescription(`**${charData.name_th}** ได้รับเสี้ยววิญญาณ **${dropAmount}** ชิ้น (รวม: ${newTotal})`)] });
+                
+                const embed = new EmbedBuilder()
+                    .setColor(charData.theme_color || '#ffffff')
+                    .setTitle(`✨ เข้างานที่ร้านหนังสือ`)
+                    .setDescription(`**${charData.name_th}** ได้รับเสี้ยววิญญาณ **${dropAmount}** ชิ้น (รวม: ${newTotal})`);
+                    
+                await interaction.editReply({ embeds: [embed] });
             }
 
             else if (interaction.commandName === 'addshards') {
